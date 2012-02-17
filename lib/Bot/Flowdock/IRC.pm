@@ -131,6 +131,10 @@ sub said {
     # poco::irc at some point.
     my $msg = ($address ? "$address: " : '') . $args->{body};
 
+    # XXX when they allow external users to post status update events, fix this
+    $msg = '*' . $msg . '*'
+        if $args->{emoted};
+
     $self->flowdock_api->push_chat({
         external_user_name => $args->{who},
         content            => $msg,
@@ -138,6 +142,14 @@ sub said {
 
     return;
 }
+
+around emoted => sub {
+    my $orig = shift;
+    my $self = shift;
+    my ($args) = @_;
+    $args->{emoted} = 1;
+    return $self->$orig($args);
+};
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
