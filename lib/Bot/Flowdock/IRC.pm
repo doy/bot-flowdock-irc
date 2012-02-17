@@ -116,22 +116,31 @@ sub tick {
 
         next if $event->{user} == $self->_my_id;
 
+        my $app = $event->{app} || '';
         my $type = $event->{event};
 
-        if ($type eq 'message' || $type eq 'line') {
-            $self->flowdock_message($event);
+        if ($app eq 'chat') {
+            if ($type eq 'message' || $type eq 'line') {
+                $self->flowdock_message($event);
+            }
+            elsif ($type eq 'status') {
+                $self->flowdock_status($event);
+            }
+            elsif ($type eq 'user-edit') {
+                $self->flowdock_user_edit($event);
+            }
+            else {
+                warn "Unknown chat event type $type: " . encode_json($event);
+            }
         }
-        elsif ($type eq 'status') {
-            $self->flowdock_status($event);
-        }
-        elsif ($type eq 'user-edit') {
-            $self->flowdock_user_edit($event);
-        }
-        elsif ($type eq 'activity.user') {
-            # ignore it
+        elsif ($app eq 'influx') { # i think this is timeline stuff
+            # ...
         }
         else {
-            warn "Unknown event type $type: " . encode_json($event);
+            # we don't care activity events
+            if ($type ne 'activity.user') {
+                warn "Unknown event type $type for unknown app $app: " . encode_json($event);
+            }
         }
     }
 
