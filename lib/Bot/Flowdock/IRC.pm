@@ -135,7 +135,12 @@ sub tick {
             }
         }
         elsif ($app eq 'influx') { # i think this is timeline stuff
-            # ...
+            if ($type eq 'vcs' && any { /^github/ } @{ $event->{tags} }) {
+                $self->flowdock_github_event($event);
+            }
+            else {
+                $self->flowdock_unknown_inbox_event($event);
+            }
         }
         else {
             # we don't care activity events
@@ -180,6 +185,37 @@ sub flowdock_user_edit {
     $self->_say_to_channel("$oldnick is now known as $nick");
 
     $self->_set_name_for_id($id, $nick);
+}
+
+sub flowdock_github_event {
+    my $self = shift;
+    my ($event) = @_;
+
+    my $content = $event->{content};
+
+    my $pusher = $content->{pusher}{name};
+    $pusher = $content->{commits}[0]{author}{username} . '(?)'
+        if $pusher eq 'none'; # XXX ?
+    my $commits = @{ $content->{commits} };
+    my $repo = $content->{repository}{name};
+    (my $branch = $content->{ref}) =~ s{^refs/heads/}{};
+    my $compare = $content->{compare};
+    my $commit_messages = join(' / ', map { $_->{message} }
+                                          @{ $content->{commits} });
+
+    my $msg = "[github] $pusher pushed $commits commit"
+            . ($commits == 1 ? '' : 's')
+            . " to $repo/$branch ($compare): $commit_messages";
+
+    $self->_say_to_channel($msg);
+}
+
+sub flowdock_unknown_inbox_event {
+    my $self = shift;
+    my ($event) = @_;
+
+    warn "unknown timeline event type $event->{event}: " . encode_json($event);
+    $self->_say_to_channel("[$event->{event}] unknown");
 }
 
 sub said {
