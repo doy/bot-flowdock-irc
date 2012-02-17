@@ -122,9 +122,18 @@ sub said {
     my $self = shift;
     my ($args) = @_;
 
+    my $address = $args->{address} || '';
+
+    return if $address eq 'msg';
+
+    # XXX: Bot::BasicBot does a lot of "helpful" munging of messages that we
+    # receive. this is annoying for this use case. look into switching to raw
+    # poco::irc at some point.
+    my $msg = ($address ? "$address: " : '') . $args->{body};
+
     $self->flowdock_api->push_chat({
         external_user_name => $args->{who},
-        content            => $args->{body},
+        content            => $msg,
     });
 
     return;
