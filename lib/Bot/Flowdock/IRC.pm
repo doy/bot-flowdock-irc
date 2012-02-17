@@ -6,6 +6,7 @@ use JSON;
 use List::MoreUtils 'any';
 use Net::Flowdock 0.03;
 use Net::Flowdock::Stream;
+use String::Truncate 'elide';
 
 extends 'Bot::BasicBot';
 
@@ -224,17 +225,15 @@ sub _say_to_channel {
 
     if (defined($from)) {
         $body = $params{emoted} ? "* $from $body" : "<$from> $body";
-        $self->say(
-            channel => ($self->channels)[0],
-            body    => $body,
-        );
     }
     else {
-        $self->say(
-            channel => ($self->channels)[0],
-            body    => "-!- $body",
-        );
+        $body = "-!- $body";
     }
+
+    $self->say(
+        channel => ($self->channels)[0],
+        body    => elide($body, 350, { at_space => 1 }),
+    );
 }
 
 sub _say_to_flowdock {
