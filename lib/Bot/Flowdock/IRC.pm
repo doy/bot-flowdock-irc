@@ -92,7 +92,7 @@ sub connected {
     });
 
     for my $user (@{ $flow->body->{users} }) {
-        $self->_id_map->{$user->{id}} = $user->{name};
+        $self->_id_map->{$user->{id}} = $user->{nick};
     }
 }
 
