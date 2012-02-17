@@ -99,7 +99,7 @@ sub tick {
 
         my $type = $event->{event};
 
-        if ($type eq 'message') {
+        if ($type eq 'message' || $type eq 'line') {
             $self->flowdock_message($event);
         }
         elsif ($type eq 'user-edit') {
@@ -124,7 +124,10 @@ sub flowdock_message {
     return if exists $event->{external_user_name};
 
     my $name = $self->name_from_id($event->{user});
-    $self->_say_to_channel($event->{content}, $name);
+    $self->_say_to_channel(
+        $event->{content}, $name,
+        emoted => ($event->{event} eq 'line')
+    );
 }
 
 sub flowdock_user_edit {
@@ -179,12 +182,13 @@ sub nick_change {
 
 sub _say_to_channel {
     my $self = shift;
-    my ($body, $from) = @_;
+    my ($body, $from, %params) = @_;
 
     if (defined($from)) {
+        $body = $params{emoted} ? "* $from $body" : "<$from> $body";
         $self->say(
             channel => ($self->channels)[0],
-            body    => "<$from> $body",
+            body    => $body,
         );
     }
     else {
