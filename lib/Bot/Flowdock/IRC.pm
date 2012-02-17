@@ -3,7 +3,7 @@ use Moose;
 use MooseX::NonMoose;
 
 use List::MoreUtils 'any';
-use Net::Flowdock;
+use Net::Flowdock 0.03;
 use Net::Flowdock::Stream;
 
 extends 'Bot::BasicBot';
