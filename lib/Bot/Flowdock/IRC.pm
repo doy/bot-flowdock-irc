@@ -7,6 +7,7 @@ use List::MoreUtils 'any';
 use Net::Flowdock 0.03;
 use Net::Flowdock::Stream;
 use String::Truncate 'elide';
+use WWW::Shorten 'GitHub';
 
 extends 'Bot::BasicBot';
 
@@ -199,13 +200,13 @@ sub flowdock_github_event {
     my $commits = @{ $content->{commits} };
     my $repo = $content->{repository}{name};
     (my $branch = $content->{ref}) =~ s{^refs/heads/}{};
-    my $compare = $content->{compare};
+    my $compare = makeashorterlink($content->{compare});
     my $commit_messages = join(' / ', map { $_->{message} }
                                           @{ $content->{commits} });
 
     my $msg = "[github] $pusher pushed $commits commit"
             . ($commits == 1 ? '' : 's')
-            . " to $repo/$branch ($compare): $commit_messages";
+            . " to $repo/$branch (compare $compare): $commit_messages";
 
     $self->_say_to_channel($msg);
 }
