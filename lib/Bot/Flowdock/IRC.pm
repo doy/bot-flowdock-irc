@@ -267,9 +267,12 @@ sub _say_to_channel {
         $body = "-!- $body";
     }
 
+    $body =~ s/\n/ /g;
+    $body = elide($body, 275, { at_space => 1 });
+
     $self->say(
         channel => ($self->channels)[0],
-        body    => elide($body, 350, { at_space => 1 }),
+        body    => $body,
     );
 }
 
