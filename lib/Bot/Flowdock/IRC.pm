@@ -67,22 +67,14 @@ has flowdock_stream => (
 
 has _id_map => (
     traits  => ['Hash'],
-    is      => 'ro',
     isa     => 'HashRef[Str]',
     default => sub { {} },
     handles => {
-        name_from_id   => 'get',
-        flowdock_names => 'values',
+        _set_name_for_id => 'set',
+        name_from_id     => 'get',
+        flowdock_names   => 'values',
     },
 );
-
-sub has_flowdock_name {
-    my $self = shift;
-    my ($name) = @_;
-
-    warn "checking $name";
-    return any { $name eq $_ } $self->flowdock_names;
-}
 
 sub connected {
     my $self = shift;
@@ -93,7 +85,7 @@ sub connected {
     });
 
     for my $user (@{ $flow->body->{users} }) {
-        $self->_id_map->{$user->{id}} = $user->{nick};
+        $self->_set_name_for_id($user->{id}, $user->{nick});
     }
 }
 
@@ -132,10 +124,7 @@ sub flowdock_message {
     return if exists $event->{external_user_name};
 
     my $name = $self->name_from_id($event->{user});
-    $self->say(
-        channel => ($self->channels)[0],
-        body    => "<$name> $event->{content}",
-    );
+    $self->_say_to_channel($event->{content}, $name);
 }
 
 sub flowdock_user_edit {
@@ -146,12 +135,9 @@ sub flowdock_user_edit {
     my $nick = $event->{content}{user}{nick};
     my $oldnick = $self->name_from_id($id);
 
-    $self->say(
-        channel => ($self->channels)[0],
-        body    => "* $oldnick is now known as $nick",
-    );
+    $self->_say_to_channel("$oldnick is now known as $nick");
 
-    $self->_id_map->{$id} = $nick;
+    $self->_set_name_for_id($id, $nick);
 }
 
 sub said {
@@ -171,10 +157,7 @@ sub said {
     $msg = '*' . $msg . '*'
         if $args->{emoted};
 
-    $self->flowdock_api->push_chat({
-        external_user_name => $args->{who},
-        content            => $msg,
-    });
+    $self->_say_to_flowdock($msg, $args->{who});
 
     return;
 }
@@ -186,6 +169,44 @@ around emoted => sub {
     $args->{emoted} = 1;
     return $self->$orig($args);
 };
+
+sub _say_to_channel {
+    my $self = shift;
+    my ($body, $from) = @_;
+
+    if (defined($from)) {
+        $self->say(
+            channel => ($self->channels)[0],
+            body    => "<$from> $body",
+        );
+    }
+    else {
+        $self->say(
+            channel => ($self->channels)[0],
+            body    => "-!- $body",
+        );
+    }
+}
+
+sub _say_to_flowdock {
+    my $self = shift;
+    my ($body, $from) = @_;
+
+    if (defined($from)) {
+        $self->flowdock_api->push_chat({
+            external_user_name => $from,
+            content            => $body,
+        });
+    }
+    else {
+        $self->flowdock_api->send_message({
+            organization => $self->organization,
+            flow         => $self->flow,
+            event        => 'status',
+            content      => $body,
+        });
+    }
+}
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
