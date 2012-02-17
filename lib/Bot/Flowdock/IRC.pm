@@ -121,6 +121,9 @@ sub tick {
         if ($type eq 'message' || $type eq 'line') {
             $self->flowdock_message($event);
         }
+        elsif ($type eq 'status') {
+            $self->flowdock_status($event);
+        }
         elsif ($type eq 'user-edit') {
             $self->flowdock_user_edit($event);
         }
@@ -145,8 +148,15 @@ sub flowdock_message {
     my $name = $self->name_from_id($event->{user});
     $self->_say_to_channel(
         $event->{content}, $name,
-        emoted => ($event->{event} eq 'line')
+        emoted => ($event->{event} eq 'line' || $event->{event} eq 'status')
     );
+}
+
+sub flowdock_status {
+    my $self = shift;
+    my ($event) = @_;
+
+    $self->flowdock_message($event);
 }
 
 sub flowdock_user_edit {
