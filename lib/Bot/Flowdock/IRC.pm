@@ -141,6 +141,17 @@ sub flowdock_message {
 sub flowdock_user_edit {
     my $self = shift;
     my ($event) = @_;
+
+    my $id = $event->{user};
+    my $nick = $event->{content}{user}{nick};
+    my $oldnick = $self->name_from_id($id);
+
+    $self->say(
+        channel => ($self->channels)[0],
+        body    => "* $oldnick is now known as $nick",
+    );
+
+    $self->_id_map->{$id} = $nick;
 }
 
 sub said {
