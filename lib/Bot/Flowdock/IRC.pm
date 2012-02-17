@@ -170,6 +170,13 @@ around emoted => sub {
     return $self->$orig($args);
 };
 
+sub nick_change {
+    my $self = shift;
+    my ($old, $new) = @_;
+
+    $self->_say_to_flowdock("$old is now known as $new");
+}
+
 sub _say_to_channel {
     my $self = shift;
     my ($body, $from) = @_;
