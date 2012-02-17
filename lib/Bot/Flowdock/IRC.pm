@@ -103,19 +103,29 @@ sub tick {
         my $event = $self->flowdock_stream->get_next_event;
 
         last unless $event;
-        next unless $event->{event} eq 'message';
 
-        # skip if this is a message that we just sent
-        next if exists $event->{external_user_name};
+        my $type = $event->{event};
 
-        my $name = $self->name_from_id($event->{user});
-        $self->say(
-            channel => ($self->channels)[0],
-            body    => "<$name> $event->{content}",
-        );
+        if ($type eq 'message') {
+            $self->flowdock_message($event);
+        }
     }
 
     return 1;
+}
+
+sub flowdock_message {
+    my $self = shift;
+    my ($event) = @_;
+
+    # skip if this is a message that we just sent
+    return if exists $event->{external_user_name};
+
+    my $name = $self->name_from_id($event->{user});
+    $self->say(
+        channel => ($self->channels)[0],
+        body    => "<$name> $event->{content}",
+    );
 }
 
 sub said {
