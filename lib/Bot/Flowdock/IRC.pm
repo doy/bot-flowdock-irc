@@ -12,9 +12,18 @@ extends 'Bot::BasicBot';
 sub FOREIGNBUILDARGS {
     my $class = shift;
     my (%args) = @_;
-    delete $args{$_} for qw(token key organization flow);
+    delete $args{$_} for qw(email token key organization flow);
     return %args;
 }
+
+# XXX require this for now so that we can tell which account is the bot
+# (to allow us to filter those out so we don't get echos)
+# ideally, there would be a better way to detect this
+has email => (
+    is       => 'ro',
+    isa      => 'Str',
+    required => 1,
+);
 
 has token => (
     is  => 'ro',
@@ -76,6 +85,11 @@ has _id_map => (
     },
 );
 
+has _my_id => (
+    is  => 'rw',
+    isa => 'Int',
+);
+
 sub connected {
     my $self = shift;
 
@@ -86,6 +100,9 @@ sub connected {
 
     for my $user (@{ $flow->body->{users} }) {
         $self->_set_name_for_id($user->{id}, $user->{nick});
+        if ($user->{email} eq $self->email) {
+            $self->_my_id($user->{id});
+        }
     }
 }
 
@@ -96,6 +113,8 @@ sub tick {
         my $event = $self->flowdock_stream->get_next_event;
 
         last unless $event;
+
+        next if $event->{user} == $self->_my_id;
 
         my $type = $event->{event};
 
