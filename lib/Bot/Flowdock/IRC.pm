@@ -2,6 +2,7 @@ package Bot::Flowdock::IRC;
 use Moose;
 use MooseX::NonMoose;
 
+use JSON;
 use List::MoreUtils 'any';
 use Net::Flowdock 0.03;
 use Net::Flowdock::Stream;
@@ -109,6 +110,15 @@ sub tick {
         if ($type eq 'message') {
             $self->flowdock_message($event);
         }
+        elsif ($type eq 'user-edit') {
+            $self->flowdock_user_edit($event);
+        }
+        elsif ($type eq 'activity.user') {
+            # ignore it
+        }
+        else {
+            warn "Unknown event type $type: " . encode_json($event);
+        }
     }
 
     return 1;
@@ -126,6 +136,11 @@ sub flowdock_message {
         channel => ($self->channels)[0],
         body    => "<$name> $event->{content}",
     );
+}
+
+sub flowdock_user_edit {
+    my $self = shift;
+    my ($event) = @_;
 }
 
 sub said {
